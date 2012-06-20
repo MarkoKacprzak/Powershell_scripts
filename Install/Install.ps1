@@ -23,5 +23,10 @@ TODO:
 
 .EXAMPLE
 #>
+. .\GetTools.ps1
 
-.\GetTools.ps1
+Write-Host "Running the installer script."
+
+main
+
+python .\cxInstaller.py --checkout OpenIGTLink
