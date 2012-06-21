@@ -25,8 +25,36 @@ TODO:
 #>
 . .\GetTools.ps1
 
-Write-Host "Running the installer script."
+$script:startTime = get-date
+ 
+function GetElapsedTime() {
+    $runtime = $(get-date) - $script:StartTime
+    $retStr = [string]::format("{0} days, {1} hours, {2} minutes, {3}.{4} seconds", `
+        $runtime.Days, `
+        $runtime.Hours, `
+        $runtime.Minutes, `
+        $runtime.Seconds, `
+        $runtime.Milliseconds)
+    $retStr
+}
 
+Function ResizeWindowBuffer (){
+    $pshost = Get-Host
+    $pswindow = $pshost.ui.rawui
+
+    $newsize = $pswindow.buffersize
+    $newsize.height = 32500
+    $newsize.width = 120
+    $pswindow.buffersize = $newsize
+}
+
+Clear-Host
+ResizeWindowBuffer
+Write-Host "Running the installer script." -ForegroundColor Magenta
 main
-
-python .\cxInstaller.py --checkout OpenIGTLink
+python C:\Dev\CustusX3\install\Shared\script\cxInstaller.py --checkout --configure --all
+#There is a bug in the script, where IGSTK tries to access information in the CustusX folder,
+#which doesn't exist at that time
+python C:\Dev\CustusX3\install\Shared\script\cxInstaller.py --checkout --configure --build IGSTK
+#python C:\Dev\CustusX3\install\Shared\script\cxInstaller.py --build IGSTK CustusX3
+Write-Host "Installation process took $(GetElapsedTime)" -ForegroundColor Green
