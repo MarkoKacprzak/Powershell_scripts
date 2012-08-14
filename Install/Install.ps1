@@ -61,4 +61,4 @@ main normal all
 #which doesn't exist at that time
 #python C:\Dev\CustusX3\install\Shared\script\cxInstaller.py --checkout --configure --build --silent_mode IGSTK
 #python C:\Dev\CustusX3\install\Shared\script\cxInstaller.py --checkout --configure --silent_mode CustusX3
-Write-Host "Installation process took $(GetElapsedTime)" -ForegroundColor Green
+Write-Host "`nInstallation process took $(GetElapsedTime)" -ForegroundColor Green

@@ -44,3 +44,6 @@ Do this:
     3.	Accept license, "y + enter"
 3.	> nmake 
     1.	Can take many hours to finish.
+    
+TESTED:
+
