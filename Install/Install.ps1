@@ -51,10 +51,14 @@ Function ResizeWindowBuffer (){
 Clear-Host
 ResizeWindowBuffer
 Write-Host "Running the installer script." -ForegroundColor Magenta
-main
-python C:\Dev\CustusX3\install\Shared\script\cxInstaller.py --checkout --configure --all
+
+#Main takes input parameters
+#main partial all -tools:@('7-zip', 'jom')
+main normal all
+
+#python C:\Dev\CustusX3\install\Shared\script\cxInstaller.py --checkout --configure --all
 #There is a bug in the script, where IGSTK tries to access information in the CustusX folder,
 #which doesn't exist at that time
-python C:\Dev\CustusX3\install\Shared\script\cxInstaller.py --checkout --configure --build IGSTK
-#python C:\Dev\CustusX3\install\Shared\script\cxInstaller.py --build IGSTK CustusX3
+#python C:\Dev\CustusX3\install\Shared\script\cxInstaller.py --checkout --configure --build --silent_mode IGSTK
+#python C:\Dev\CustusX3\install\Shared\script\cxInstaller.py --checkout --configure --silent_mode CustusX3
 Write-Host "Installation process took $(GetElapsedTime)" -ForegroundColor Green
