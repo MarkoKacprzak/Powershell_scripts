@@ -2,6 +2,9 @@
 :: install tools for software development on Windows.
 @echo off 
 
+:: TODO
+:: Check that powershell actually exist!
+
 :: Sets the execution policy for powershell
 powershell -command "& {Set-ExecutionPolicy Unrestricted}"
 

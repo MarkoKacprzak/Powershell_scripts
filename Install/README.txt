@@ -5,7 +5,8 @@ This script package is developed to be used as a fresh install.
 Using it to update your system might or might not work. :)
 
 Prerequisites:
-- Windows 7
+- Windows 7 (64 bit)
+- Powershell
 - Microsoft Visual Studio 2010 already installed
 - Install.bat and GetTools.ps1 (Must be in the same folder!)
 
