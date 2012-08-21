@@ -5,6 +5,7 @@ This script package is developed to be used as a fresh install.
 Using it to update your system might or might not work. :)
 
 Prerequisites:
+- GitHub account and ssh_keys (see https://help.github.com/articles/generating-ssh-keys#platform-windows)
 - Windows 7 (64 bit)
 - Powershell
 - Microsoft Visual Studio 2010 already installed
@@ -46,5 +47,8 @@ Do this:
 3.	> nmake 
     1.	Can take many hours to finish.
     
-TESTED:
+(Problem 3)
+Anti-virus finds potentially harmfull program, something about the compiler.
+(Solution3)
+Tell anti-virus to ignore.
 
