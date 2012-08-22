@@ -5,10 +5,11 @@ This script package is developed to be used as a fresh install.
 Using it to update your system might or might not work. :)
 
 Prerequisites:
-- GitHub account and ssh_keys (see https://help.github.com/articles/generating-ssh-keys#platform-windows)
+- GitHub account
 - Windows 7 (64 bit)
 - Powershell
-- Microsoft Visual Studio 2010 already installed
+- For 64 bit compiling: Microsoft Visual Studio 2010 already installed
+- "C:\" must be default drive for installed software
 - Install.bat and GetTools.ps1 (Must be in the same folder!)
 
 Install:
