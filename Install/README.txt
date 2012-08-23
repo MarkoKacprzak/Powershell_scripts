@@ -9,8 +9,10 @@ Prerequisites:
 - Windows 7 (64 bit)
 - Powershell
 - For 64 bit compiling: Microsoft Visual Studio 2010 already installed
-- "C:\" must be default drive for installed software
 - Install.bat and GetTools.ps1 (Must be in the same folder!)
+
+Caveat:
+- Only support shared/dynamic builds atm
 
 Install:
 1) Start -> Search for cmd -> Right click -> Run as Administrator
