@@ -98,6 +98,19 @@ Function ExtractIcon ($exeName, $saveAs){
 
 # Variables
 #=========================================================================
+
+# User specific information
+###################################################
+$script:CX_GIT_NAME = "Developer"
+$script:CX_GIT_EMAIL = "developer@sintef.no"
+
+$script:CX_MEDTEK_USERNAME = "medtek"
+
+$script:CX_GITHUB_USERNAME = ""
+$script:CX_GITHUB_PASSWORD = "" #TODO not nice to have in plain text...
+
+# System information
+###################################################
 $script:CX_DEBUG_SCRIPT = $true #use if developing the windows installer script
 
 $script:CX_DEFAULT_DRIVE = "C:" #This should be the drive where windows and all your software is installed
@@ -122,17 +135,14 @@ $script:CX_QT_CONFIG_OPTIONS = @("-$script:CX_QT_BUILD_TYPE", "-opensource", "-p
 $script:CX_QT_BUILD_X86 = $script:CX_EXTERNAL_CODE+"\Qt\Qt_"+$CX_QT_VERSION+"_build32_jom_DebugAndRelease"
 $script:CX_QT_BUILD_X64 = $script:CX_EXTERNAL_CODE+"\Qt\Qt_"+$CX_QT_VERSION+"_build64_jom_DebugAndRelease"
 $script:CX_QT_QTDIR_X86 = $script:CX_QT_BUILD_X86
-$script:CX_QT_QTDIR_X86 = $script:CX_QT_BUILD_X64
+$script:CX_QT_QTDIR_X64 = $script:CX_QT_BUILD_X64
 
 $cores = Cores
 $script:CX_INSTALL_GENERATOR = "jom" #alternatives: "jom", "eclipse"
 $script:CX_INSTALL_BUILD_TYPE = "Debug" #alternatives: "Debug", "Release", "RelWithDebInfo"
-$script:CX_INSTALL_COMMON_OPTIONS = @("--silent_mode", "--$script:CX_INSTALL_GENERATOR", "-j", "$cores", "--build_type", "$script:CX_INSTALL_BUILD_TYPE") #Do NOT specify components nor checkout, config or build here
+$script:CX_INSTALL_COMMON_OPTIONS = @("--silent_mode", "--static", "--$script:CX_INSTALL_GENERATOR", "-j", "$cores", "--build_type", "$script:CX_INSTALL_BUILD_TYPE", "--user", "$script:CX_MEDTEK_USERNAME", "--github_user", "$script:CX_GITHUB_USERNAME", "--github_password", "$script:CX_GITHUB_PASSWORD") #Do NOT specify components nor checkout, config or build here
 
 $script:CX_TOOL_FOLDER = "$HOME\Downloaded_tools"
 $script:CX_ENVIRONMENT_FOLDER = "$HOME\CustusX_environment"
 $script:CX_CXVARS_86 = $CX_ENVIRONMENT_FOLDER+"\cxVars_x86.bat"
 $script:CX_CXVARS_64 = $CX_ENVIRONMENT_FOLDER+"\cxVars_x64.bat"
-
-$script:CX_GIT_NAME = "Developer"
-$script:CX_GIT_EMAIL = "developer@sintef.no"

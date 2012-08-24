@@ -6,13 +6,14 @@ Using it to update your system might or might not work. :)
 
 Prerequisites:
 - GitHub account
+- SSH-Keypair (https://help.github.com/articles/generating-ssh-keys#platform-windows) #HOW TO DO THIS BEFORE GIT IS INSTALLED!?!?!?#
 - Windows 7 (64 bit)
 - Powershell
-- For 64 bit compiling: Microsoft Visual Studio 2010 already installed
+- For 64 bit compiling or redistribution: Microsoft Visual Studio 2010 already installed
 - Install.bat and GetTools.ps1 (Must be in the same folder!)
 
 Caveat:
-- Only support shared/dynamic builds atm
+- Only support static CustusX3 builds atm, Qt can and will be buildt with shared/dynamic building.
 
 Install:
 1) Start -> Search for cmd -> Right click -> Run as Administrator

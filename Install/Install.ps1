@@ -54,8 +54,9 @@ if($os_arch -ne "64-bit")
 
 Write-Host "`n***** TOOLS *****" -ForegroundColor Yellow
 #$success = main partial all -tools:@('console2', 'cppunit')
-#main normal download
-$success = main full all
+#$success = main normal all
+#$success = main full all
+$success = main developer all
 if(!($success -eq $true))
     {Write-Host "Script failed when getting tools."; return $false}
     
@@ -75,11 +76,9 @@ if($build64bit){
     if(Test-QtConfigured $script:CX_QT_BUILD_X64)
         {$configure = "echo Qt already configured, skipping."}
     $batch_64bit = @"
-echo on
+echo ***** Building Qt 64 bit using jom with $cores core(s) *****
 call "$script:CX_MSVC_VCVARSALL" x64
 cd $script:CX_QT_BUILD_X64
-::set QTDIR=$script:CX_QT_QTDIR_X64
-::set QMAKESPEC=$script:CX_QT_QMAKESPEC
 set PATH=$qt_64buildbin_dir;%PATH%
 $configure
 jom /j $cores
@@ -99,11 +98,9 @@ if($build32bit){
     if(Test-QtConfigured $script:CX_QT_BUILD_X86)
         {$configure = "echo Qt already configured, skipping."}
     $batch_32bit = @"
-echo on
+echo ***** Building Qt 32 bit using jom with $cores core(s) *****
 call "$script:CX_MSVC_VCVARSALL" x86
 cd $script:CX_QT_BUILD_X86
-::set QTDIR=$script:CX_QT_QTDIR_X86
-::set QMAKESPEC=$script:CX_QT_QMAKESPEC
 set PATH=$qt_32buildbin_dir;%PATH%
 $configure
 jom /j $cores
@@ -123,6 +120,7 @@ python .\cxInstaller.py --checkout --all $script:CX_INSTALL_COMMON_OPTIONS
 # There is a bug in the script, where IGSTK tries to access information in the CustusX folder,
 # which doesn't exist at that time
 python .\cxInstaller.py --checkout $script:CX_INSTALL_COMMON_OPTIONS IGSTK
+##python .\cxInstaller.py --checkout $script:CX_INSTALL_COMMON_OPTIONS CustusX3 UltrasonixSDK
 
 
 # Configure and build libs
@@ -150,7 +148,8 @@ if($build32bit){
     
     $configureAndBuild32 = @"
 call $script:CX_CXVARS_86
-python .\cxInstaller.py --configure --build --all $script:CX_INSTALL_COMMON_OPTIONS
+python .\cxInstaller.py --configure_clean --build --all $script:CX_INSTALL_COMMON_OPTIONS
+::python .\cxInstaller.py --configure_clean --build $script:CX_INSTALL_COMMON_OPTIONS CustusX3 UltrasonixSDK
 "@
     $tempFile32 = [IO.Path]::GetTempFileName() | Rename-Item -NewName {$_ -replace 'tmp$', 'bat'} -PassThru
     Add-Content $tempFile32 $configureAndBuild32
