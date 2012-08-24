@@ -7,18 +7,18 @@ Push-Location $psScriptRoot
 . ./GetTools.ps1
 Pop-Location
 
-Function Install-CustusXDeveloperEnvironment {
+Function Install {
     Write-Host "Installing!!!"
-    Install 
+    Install-CustusXDevelopmentEnvironment -dummy $true
 }
 
 #Aliases
-Set-Alias Install-CDE Install-CustusXDeveloperEnvironment
+#Set-Alias Install-CDE Install-CustusXDeveloperEnvironment
 
 #Define which functions to make available
 Export-ModuleMember -Function @(
-    "Install-CustusXDeveloperEnvironment"
+    "Install"
     )
-Export-ModuleMember -Alias @(
-        'Install-CDE'
-)
+#Export-ModuleMember -Alias @(
+#        'Install-CDE'
+#)
