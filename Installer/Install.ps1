@@ -103,7 +103,7 @@ call "$script:CX_MSVC_VCVARSALL" x86
 cd $script:CX_QT_BUILD_X86
 set PATH=$qt_32buildbin_dir;%PATH%
 $configure
-jom /j $cores
+::jom /j $cores
 "@
 
     $tempFile32 = [IO.Path]::GetTempFileName() | Rename-Item -NewName {$_ -replace 'tmp$', 'bat'} -PassThru
@@ -148,8 +148,8 @@ if($build32bit){
     
     $configureAndBuild32 = @"
 call $script:CX_CXVARS_86
-python .\cxInstaller.py --configure_clean --build --all $script:CX_INSTALL_COMMON_OPTIONS
-::python .\cxInstaller.py --configure_clean --build $script:CX_INSTALL_COMMON_OPTIONS CustusX3 UltrasonixSDK
+python .\cxInstaller.py --configure --build --all $script:CX_INSTALL_COMMON_OPTIONS
+::python .\cxInstaller.py --configure --build $script:CX_INSTALL_COMMON_OPTIONS CustusX3 UltrasonixSDK
 "@
     $tempFile32 = [IO.Path]::GetTempFileName() | Rename-Item -NewName {$_ -replace 'tmp$', 'bat'} -PassThru
     Add-Content $tempFile32 $configureAndBuild32
