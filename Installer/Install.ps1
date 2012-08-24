@@ -32,10 +32,69 @@ $script:startTime = get-date
 
 Function Install-CustusXDevelopmentEnvironment {
     param(
+        ## Used for testing, will not install anything.
         [Parameter(Mandatory=$false)]
-        [bool]$dummy=$false
+        [bool]$dummy=$false,
+        
+        ## Select tool installation package
+        [Parameter(Mandatory=$true)]
+        [ValidateSet('developer', 'full', 'partial')]
+        [string]$tool_package,
+        
+        ## Select which actions should be preformed on the tools
+        [Parameter(Mandatory=$true)]
+        [ValidateSet('all', 'download', 'install', 'environment')]
+        [string[]]$tool_actions,
+        
+        ## Select which tools to processed (will only work with tool_package=partial)
+        [Parameter(Mandatory=$false)]
+        [ValidateSet('7-Zip', 'cppunit', 'jom', 'git', 'svn', 'cmake', 'python', 'perl', 'eclipse', 'qt', 'boost', 'MSVC2010Express', 'console2')]
+        [string[]]$tools,
+        
+        ## Select library installation package
+        [Parameter(Mandatory=$true)]
+        [ValidateSet('all', 'partial')]
+        [string]$lib_package,
+        
+        ## Select which actions should be preformed on the libraries
+        [Parameter(Mandatory=$true)]
+        [ValidateSet('all', 'checkout', 'clean_configure', 'configure', 'build')]
+        [string[]]$lib_actions,
+        
+        ## Select which libraries to process (will only work with lib_package=partial)
+        [Parameter(Mandatory=$false)]
+        [ValidateSet('ITK', 'VTK', 'OpenCV', 'OpenIGTLink', 'IGSTK', 'UltrasonixSDK', 'CustusX3')]
+        [string[]]$libs,
+        
+        ## Select which generator to use with CMake
+        [Parameter(Mandatory=$true)]
+        [ValidateSet('Eclipse CDT4 - NMake Makefiles', 'NMake Makefiles JOM')]
+        [string]$cmake_generator,
+        
+        ## Select build type
+        [Parameter(Mandatory=$true)]
+        [ValidateSet('Debug', 'Release')]
+        [string]$build_type,
+        
+        ## Select which target architectures to build for
+        [Parameter(Mandatory=$true)]
+        [ValidateSet('x86', 'x64')]
+        [string[]]$target_archs
     )
+    
+    #TODO handle all options! Use them in the rest of the script
+    
     if($dummy){
+        Write-Host '$dummy: '$dummy -ForegroundColor Yellow
+        Write-Host '$tool_package: '$tool_package -ForegroundColor Yellow
+        Write-Host '$tool_actions: '$tool_actions -ForegroundColor Yellow
+        Write-Host '$tools: '$tools -ForegroundColor Yellow
+        Write-Host '$lib_package: '$lib_package -ForegroundColor Yellow
+        Write-Host '$lib_actions: '$lib_actions -ForegroundColor Yellow
+        Write-Host '$libs: '$libs -ForegroundColor Yellow
+        Write-Host '$cmake_generator: '$cmake_generator -ForegroundColor Yellow
+        Write-Host '$build_type: '$build_type -ForegroundColor Yellow
+        Write-Host '$target_archs: '$target_archs -ForegroundColor Yellow
         Write-Host "Dummy exit." -ForegroundColor Green
         return
     }
@@ -126,10 +185,10 @@ $configure
     # Checkout libs
     #####
     Write-Host "`n***** LIBS CHECKOUT *****" -ForegroundColor Yellow
-    python .\cxInstaller.py --checkout --all $script:CX_INSTALL_COMMON_OPTIONS
+    #python .\cxInstaller.py --checkout --all $script:CX_INSTALL_COMMON_OPTIONS
     # There is a bug in the script, where IGSTK tries to access information in the CustusX folder,
     # which doesn't exist at that time
-    python .\cxInstaller.py --checkout $script:CX_INSTALL_COMMON_OPTIONS IGSTK
+    #python .\cxInstaller.py --checkout $script:CX_INSTALL_COMMON_OPTIONS IGSTK
     ##python .\cxInstaller.py --checkout $script:CX_INSTALL_COMMON_OPTIONS CustusX3 UltrasonixSDK
 
 

@@ -106,8 +106,8 @@ $script:CX_GIT_EMAIL = "developer@sintef.no"
 
 $script:CX_MEDTEK_USERNAME = "medtek"
 
-$script:CX_GITHUB_USERNAME = ""
-$script:CX_GITHUB_PASSWORD = "" #TODO not nice to have in plain text...
+$script:CX_GITHUB_USERNAME = "user"
+$script:CX_GITHUB_PASSWORD = "password" #TODO not nice to have in plain text...
 
 # System information
 ###################################################
@@ -138,9 +138,14 @@ $script:CX_QT_QTDIR_X86 = $script:CX_QT_BUILD_X86
 $script:CX_QT_QTDIR_X64 = $script:CX_QT_BUILD_X64
 
 $cores = Cores
+#REMOVE when used as a parameter in Installer.ps1
 $script:CX_INSTALL_GENERATOR = "jom" #alternatives: "jom", "eclipse"
+#REMOVE when used as a parameter in Installer.ps1
 $script:CX_INSTALL_BUILD_TYPE = "Debug" #alternatives: "Debug", "Release", "RelWithDebInfo"
 $script:CX_INSTALL_COMMON_OPTIONS = @("--silent_mode", "--static", "--$script:CX_INSTALL_GENERATOR", "-j", "$cores", "--build_type", "$script:CX_INSTALL_BUILD_TYPE", "--user", "$script:CX_MEDTEK_USERNAME", "--github_user", "$script:CX_GITHUB_USERNAME", "--github_password", "$script:CX_GITHUB_PASSWORD") #Do NOT specify components nor checkout, config or build here
+
+#TODO should look like this instead
+#$script:CX_INSTALL_COMMON_OPTIONS = @("--silent_mode", "--static", "-j", "$cores", "--user", "$script:CX_MEDTEK_USERNAME")
 
 $script:CX_TOOL_FOLDER = "$HOME\Downloaded_tools"
 $script:CX_ENVIRONMENT_FOLDER = "$HOME\CustusX_environment"

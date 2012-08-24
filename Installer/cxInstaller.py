@@ -77,7 +77,6 @@ class Common(object):
         self.mBuildFolder = "build" # default build folder. This is auto-changed when using xcode or 32 bit.
         self.m32bitCompileCMakeOption = "" # use "-DCMAKE_OSX_ARCHITECTURES=i386" for 32 bit. Done automatically by settings --b32 from command line.
         if (self.PLATFORM == 'Windows'):
-            #TODO create option to select cmake generator
             self.mCMakeGenerator = 'Eclipse CDT4 - NMake Makefiles' # need to surround with ' ' instead of " " on windows for it to work
         else:
             self.mCMakeGenerator = "Eclipse CDT4 - Unix Makefiles" # or "Xcode". Use -eclipse or -xcode from command line. Applies only to workspace projects.
@@ -266,7 +265,7 @@ class CppComponent(Component):
             if(DATA.mCMakeGenerator == 'Eclipse CDT4 - NMake Makefiles'):
                 runShell('nmake')
             if(DATA.mCMakeGenerator == 'NMake Makefiles JOM'):
-                runShell('''jom -j%s''' % str(DATA.options.makethreads))
+                runShell('''jom -k -j%s''' % str(DATA.options.makethreads))
         else:
             # the export DYLD... line is a hack to get shared linking to work on MacOS with vtk5.6
             # - http://www.mail-archive.com/paraview@paraview.org/msg07520.html
@@ -278,7 +277,10 @@ class CppComponent(Component):
     def makeClean(self):
         self._changeDirToBuild()
         if(DATA.PLATFORM == 'Windows'):
-            runShell('nmake -clean')
+            if(DATA.mCMakeGenerator == 'Eclipse CDT4 - NMake Makefiles'):
+                runShell('nmake -clean')
+            if(DATA.mCMakeGenerator == 'NMake Makefiles JOM'):
+                runShell('jom -clean')
         else:
             runShell('make clean')
 # ---------------------------------------------------------
@@ -643,9 +645,9 @@ class UltrasonixSDK(CppComponent):
     def help(self):
         return 'UltrasonixSDK'
     def includePath(self):
-        return self.sourceFolder() + "/ulterius/inc"
+        return self.path() + "/" + self.sourceFolder() + "/ulterius/inc"
     def libFile(self):
-        return self.sourceFolder() + "/ulterius/lib/ulterius.lib"
+        return self.path() + "/" + self.sourceFolder() + "/ulterius/lib/ulterius.lib"
     def path(self):
         return DATA.mExternalDir + "/UltrasonixSDK"
     def _rawCheckout(self):
@@ -830,6 +832,8 @@ Available components are:
         '''
         options, arguments = self.optionParser.parse_args()
         DATA.options = options
+        
+        DATA.mBuildType = options.build_type
         # if options.basic:
         # downloadDiskImages()
         # return
@@ -872,9 +876,9 @@ Available components are:
             DATA.mCMakeGenerator = 'NMake Makefiles JOM'
             DATA.mBuildFolder = DATA.mBuildFolder + "_jom"
             print 'Generate jom makefiles'
-            
-        DATA.mBuildType = options.build_type
-        DATA.mBuildFolder = DATA.mBuildFolder + "_" + DATA.mBuildType
+        
+        #TODO can be wrong for external libs as they use DATA.mBuildExternalsType!
+        DATA.mBuildFolder = DATA.mBuildFolder + "_" + DATA.mBuildType 
         
         useLibNames = [val for val in self.libnames if val in arguments]
         
@@ -882,6 +886,10 @@ Available components are:
             useLibNames = self.libnames
             
         useLibs = [lib for lib in self.libraries if lib.name() in useLibNames]
+        
+        #Windows do not allow linking between different build types
+        if(self.PLATFORM == 'Windows'):
+            DATA.mBuildExternalsType = DATA.mBuildType
                   
         # display help if no components selected
         if len(useLibs)==0:

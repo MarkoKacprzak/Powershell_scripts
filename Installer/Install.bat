@@ -14,6 +14,9 @@ powershell -command "& {Set-ExecutionPolicy Unrestricted}"
 :: "$process.WaitForExit();"^
 :: "}"
 
+:: Imports the installer module and runs the Install function
+:: which will install a CustusX developer environment
 powershell -noprofile -command "&{"^
- "Write-Host "..\Installer" -ForegroundColor Red; Import-Module ..\Installer -Force; Install;"^
+ "Import-Module ..\Installer -Force;"^
+ "Install-CustusXDevelopmentEnvironment -dummy $true -tool_package 'developer' -tool_actions @('all') -tools @('jom') -lib_package 'all' -lib_actions @('all') -libs @('OpenCV') -cmake_generator 'NMake Makefiles JOM' -build_type 'Debug' -target_archs @('x86', 'x64');"^
  "}"
