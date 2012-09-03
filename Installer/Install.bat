@@ -2,9 +2,6 @@
 :: install tools for software development on Windows.
 @echo off 
 
-:: TODO
-:: Check that powershell actually exist!
-
 :: Sets the execution policy for powershell
 powershell -command "& {Set-ExecutionPolicy Unrestricted}"
 
@@ -18,5 +15,7 @@ powershell -command "& {Set-ExecutionPolicy Unrestricted}"
 :: which will install a CustusX developer environment
 powershell -noprofile -command "&{"^
  "Import-Module ..\Installer -Force;"^
- "Install-CustusXDevelopmentEnvironment -dummy $true -tool_package 'developer' -tool_actions @('all') -tools @('jom') -lib_package 'all' -lib_actions @('all') -libs @('OpenCV') -cmake_generator 'NMake Makefiles JOM' -build_type 'Debug' -target_archs @('x86', 'x64');"^
+ "Install-CustusXDevelopmentEnvironment -dummy $false -tool_package 'developer' -tool_actions 'all' -tools @('jom') -lib_package 'all' -lib_actions @('all') -libs @('OpenCV') -cmake_generator 'NMake Makefiles JOM' -build_type 'Release' -target_archs @('x86', 'x64') -ssh_keys 'append';"^
+ "Read-Host 'Convert to developer machine? Ctrl+C if no'"^
+ "ConvertTo-DeveloperMachine"^
  "}"
