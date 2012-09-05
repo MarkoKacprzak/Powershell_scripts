@@ -1,4 +1,161 @@
-﻿<#
+﻿# AUTHOR: Janne Beate Bakeng, SINTEF
+# DATE: 04.09.2012
+#
+# EXAMPLES OF USAGE
+#$log = New-Object Log("C:\Users\jbake\Desktop\log.txt")
+#$log.addSUCCESS("Test1")
+#$log.addERROR("Test2")
+#$log.addWARNING("Test3")
+#$log.addINFO("Test4")
+#$log.addDEBUG("Test5")
+#$log.print()
+$logType = @'
+using System;
+using System.IO;
+using System.Collections.Generic;
+
+public class Log
+{
+    public Log(string filepath){
+        if(!File.Exists(filepath)){
+            string dirname = Path.GetDirectoryName(filepath);
+            if(!Directory.Exists(dirname)){
+                Directory.CreateDirectory(dirname);
+            }
+            File.CreateText(filepath).Close();
+        }
+        filename = filepath;
+        add("","\n");
+        add("[START LOGGING]    ["+getTimestamp()+"]   ","=====================================");
+    }
+    ~Log(){
+        //No idea when this is called...
+        add("[STOP LOGGING]    ["+getTimestamp()+"]   ","=====================================");
+        add("","\n");
+    }
+    public void addSUCCESS(string message){
+        add("[SUCCESS]  ["+getTimestamp()+"]   ",message);
+    }
+    public void addERROR(string message){
+        add("[ERROR]    ["+getTimestamp()+"]   ",message);
+    }
+    public void addWARNING(string message){
+        add("[WARNING]  ["+getTimestamp()+"]   ",message);
+    }
+    public void addINFO(string message){
+        add("[INFO]     ["+getTimestamp()+"]   ",message);
+    }
+    public void addDEBUG(string message){
+        add("[DEBUG]    ["+getTimestamp()+"]   ",message);
+    }
+    public void addHEADER(string message){
+        add("******** ",message+" ********");
+    }
+    public void addEMPHASIS(string message){
+        add("[EMPHASIS]    ["+getTimestamp()+"]   ",message);
+    }
+    public void print(){
+        using (StreamReader r = File.OpenText(filename)){
+            string line;
+            while ((line = r.ReadLine()) != null)
+            {
+                Console.WriteLine(line);
+            }
+        }
+    }
+    
+    private string getTimestamp(){
+        return DateTime.Now.ToString("dd.MM.yy H:mm:ss");
+    }
+    private void add(string label, string message){
+        string msg = label+message;
+        using (StreamWriter file = new StreamWriter(filename, true)){
+            file.WriteLine(msg);
+        }
+    }
+    
+    private string filename;
+}
+'@
+Add-Type -Language CSharp -TypeDefinition $logType
+
+<#
+.SYNOPSIS
+Convenience function for logging and writing to screen.
+
+WARNING: Depends on Config.ps1
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 04.09.2012
+
+.EXAMPLE
+Add-Logging 'SUCCESS' "This worked."
+#>
+Function Add-Logging{
+    param(
+        ## The category the message should be logged as
+        [Parameter(Mandatory=$true, Position=0)]
+        [ValidateSet('SUCCESS','ERROR','DEBUG','INFO','WARNING','HEADER','EMPHASIS')]
+        [string]$type,
+        ## The message to log
+        [Parameter(Mandatory=$true, Position=1)]
+        [string]$message
+    )
+    if(!$script:CX_LOGGER){return "ERROR COULD NOT FIND LOGGER!!!"}
+    switch($type){
+        'SUCCESS'{$script:CX_LOGGER.addSUCCESS($message); Write-Host $message -ForegroundColor "Green"}
+        'ERROR'{$script:CX_LOGGER.addERROR($message); Write-Host $message -ForegroundColor "Red"}
+        'DEBUG'{$script:CX_LOGGER.addDEBUG($message); if($script:CX_DEBUG_SCRIPT){Write-Host $message -ForegroundColor "DarkGray"}}
+        'INFO'{$script:CX_LOGGER.addINFO($message); Write-Host $message -ForegroundColor "White"}
+        'WARNING'{$script:CX_LOGGER.addWARNING($message); Write-Host $message -ForegroundColor "DarkRed"}
+        'HEADER'{$script:CX_LOGGER.addHEADER($message); Write-Host "`n******** "$message" ********" -ForegroundColor "Blue"}
+        'EMPHASIS'{$script:CX_LOGGER.addEMPHASIS($message); Write-Host $message -ForegroundColor "Magenta"}
+        default{Write-Host "Could not send messageto log: `"$message`" " -ForegroundColor "Red"}
+    }
+}
+
+<#
+.SYNOPSIS
+Create new shortcut.
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 04.09.2012
+
+.EXAMPLE
+Add-Shortcut "C:\Path\To\Shortcut.lnk" 'cmd.exe'
+Creates a new shortcut that points to cmd.exe.
+
+.EXAMPLE
+Add-Shortcut "C:\Path\To\Shortcut.lnk" 'cmd.exe' "/C" "C:\Path\To\Icon.ico"
+Creates a new shortcut that points at cmd.exe, sends arguments /C to cmd.exe and
+adds icon Icon.ico as shortcuts icon.
+#>
+Function Add-Shortcut{
+    param(
+        ## Full path to shortcut
+        [Parameter(Mandatory=$true)]
+        [string]$saveAsPath,
+        ## Path to shortcuts target application
+        [Parameter(Mandatory=$true)]
+        [string]$targetPath,
+        ## Arguments for the target application
+        [Parameter(Mandatory=$false)]
+        [string]$arguments="",
+        ## Shortcuts icon
+        [Parameter(Mandatory=$false)]
+        [string]$iconLocation=""
+    )
+    $objShell = New-Object -ComObject WScript.Shell
+    $objShortCut = $objShell.CreateShortcut($saveAsPath)
+    $objShortCut.IconLocation = $iconLocation
+    $objShortCut.TargetPath = $targetPath
+    $objShortCut.Arguments = $arguments
+    $objShortCut.Save()
+}
+
+<#
 .SYNOPSIS
 Configures machine with given ssh keys.
 
@@ -41,10 +198,12 @@ Function Install-SSHKey{
         mkdir $ssh_folder | Out-Null
     }
     if(-not $append){
+        #replace
         Copy-Item $public_key "$ssh_folder$sshkey_public" -Force
         Copy-Item $private_key "$ssh_folder$sshkey_private" -Force
         Copy-Item $known_hosts "$ssh_folder$sshkey_known_hosts" -Force
     }else{
+        #append
         Add-Content -Path "$ssh_folder$sshkey_public" -Value (Get-Content $public_key)
         Add-Content -Path "$ssh_folder$sshkey_private" -Value (Get-Content $private_key)
         Add-Content -Path "$ssh_folder$sshkey_known_hosts" -Value (Get-Content $known_hosts)
@@ -123,7 +282,24 @@ Function Add-Console2Tab{
     }
 }
 
-Function Test-QtConfigured ($buildFolder){
+<#
+.SYNOPSIS
+Test if Qt is configured. It looks for configure.cache.
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 15.08.2012
+
+.EXAMPLE
+Test-QtConfigured "C:\Dev\external_code\Qt\Qt_4.8.1_build32_DebugAndRelease"
+Returns true if config.cache is present, false if not.
+#>
+Function Test-QtConfigured{
+    param(
+    ## The path to the Qt build folder
+    [string]$buildFolder
+    )
+    
     $configured = $false
     $cache = $buildFolder+"\configure.cache"
     if(Test-Path $cache)
@@ -132,24 +308,68 @@ Function Test-QtConfigured ($buildFolder){
     return $configured
 }
 
-# Returns a string with a number
-Function Get-Cores () {
+<#
+.SYNOPSIS
+Get the number of cores the computer has.
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 15.08.2012
+
+.EXAMPLE
+Get-Cores
+#>
+Function Get-Cores{
     $core_list = (Get-WmiObject -class Win32_Processor -Property "NumberOfCores" | Select-Object -Property "NumberOfCores")
     $cores = 0
     foreach($item in $core_list){$cores += $item.NumberOfCores}
     return $cores
 }
 
-# Known return values:
-# 32-bit
-# 64-bit
-Function Get-OsArchitecture () {
+<#
+.SYNOPSIS
+Get the computers operative architecture.
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 15.08.2012
+
+.EXAMPLE
+Get-OsArchitecture
+Known return values: 32-bit, 64-bit
+#>
+Function Get-OsArchitecture{
     return (Get-WmiObject -Class Win32_OperatingSystem | Select-Object OSArchitecture).OSArchitecture
 }
 
-#Valid compiler architectures to look for:
-# x86, x64, x86_amd64 (cross compiler)
-Function Find-Compiler ($arch){
+<#
+.SYNOPSIS
+Check if a microsoft visual studio c++ 2010 compiler
+for the give architecuter is found.
+
+WARNING: Depends on Config.ps1
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 15.08.2012
+
+.EXAMPLE
+Find-Compiler "x86"
+Looks for a 32 bit compiler
+
+.EXAMPLE
+Find-Compiler "x64"
+Looks for a 64 bit compiler
+
+.EXAMPLE
+Find-Compiler "x86_amd64"
+Looks for a cross compiler
+#>
+Function Find-Compiler{
+    param(
+    ## The compiler architecture to look for
+    [string]$arch
+    )
     $found = $false
     switch ($arch){
         "x86" {$found = (Test-Path "$script:CX_MSVC_CL_X86")}
@@ -160,11 +380,40 @@ Function Find-Compiler ($arch){
     return $found
 }
 
-Function Test-MSVCInstalled () {
+<#
+.SYNOPSIS
+Check if a microsoft visual studio c++ 2010 is installed
+
+WARNING: Depends on Config.ps1
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 15.08.2012
+
+.EXAMPLE
+Test-MSVCInstalled
+Returns true if 32 bit compiler of mvs2010 is found, false if not.
+#>
+Function Test-MSVCInstalled{
     return (Test-Path $script:CX_MSVC_CL_X86)
 }
 
-function GetElapsedTime($startTime) {
+<#
+.SYNOPSIS
+Get the elapsed time since a give input.
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 15.08.2012
+
+.EXAMPLE
+Test-MSVCInstalled
+Returns true if 32 bit compiler of mvs2010 is found, false if not.
+#>
+Function Get-ElapsedTime{
+    param(
+    [System.DateTime]$startTime
+    )
     $runtime = $(get-date) - $startTime
     $retStr = [string]::format("{0} days, {1} hours, {2} minutes, {3}.{4} seconds", `
         $runtime.Days, `
@@ -175,7 +424,19 @@ function GetElapsedTime($startTime) {
     $retStr
 }
 
-Function ResizeWindowBuffer (){
+<#
+.SYNOPSIS
+Resizes the current powershell window buffer to 120x32500
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 15.08.2012
+
+.EXAMPLE
+Expand-WindowBuffer
+Resized the powershells window buffer to 120x32500
+#>
+Function Expand-WindowBuffer{
     $pshost = Get-Host
     $pswindow = $pshost.ui.rawui
 
@@ -186,7 +447,25 @@ Function ResizeWindowBuffer (){
 }
 
 Add-Type -AssemblyName System.Drawing #for function Export-Icon
-Function Export-Icon ($exeName, $saveAs){
+<#
+.SYNOPSIS
+Exports a executables icon.
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 15.08.2012
+
+.EXAMPLE
+Export-Icon "C:\Application.exe" "C:\Temp\Icon.ico"
+Export Application.exe's icon and saves it as Icon.ico
+#>
+Function Export-Icon{
+    param(
+    ## Path to the executable with icon to extract
+    $exeName,
+    ## Full path to file where icon should be saved
+    $saveAs
+    )
     $stream = [System.IO.File]::OpenWrite($saveAs)
     $icon = [Drawing.Icon]::ExtractAssociatedIcon((Get-Command $exeName).Path)
     $icon.Save($stream)

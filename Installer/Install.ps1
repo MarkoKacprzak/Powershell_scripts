@@ -1,8 +1,11 @@
 ﻿# Import other scripts
 ############################
+$psScriptRoot = Split-Path -Path $MyInvocation.MyCommand.Definition
+Push-Location $psScriptRoot
 . .\Utilities.ps1
 . .\Config.ps1
 . .\GetTools.ps1
+Pop-Location
 
 # Global variabels
 ############################
@@ -38,7 +41,7 @@ Function ConvertTo-DeveloperMachine{
     git config --global user.name "Developer"
     git config --global user.email "developer@sintef.no"
     
-    Write-Host "Machine converted to developer machine." -ForegroundColor Green
+    Add-Logging 'EMPHASIS' "Machine converted to developer machine."
 }
 
 <#
@@ -74,7 +77,7 @@ Function Install-CustusXDevelopmentEnvironment {
         
         ## Select which tools to processed (will only work with tool_package=partial)
         [Parameter(Mandatory=$false)]
-        [ValidateSet('7-Zip', 'cppunit', 'jom', 'git', 'svn', 'cmake', 'python', 'perl', 'eclipse', 'qt', 'boost', 'MSVC2010Express', 'console2')]
+        [ValidateSet('7-Zip', 'cppunit', 'jom', 'git', 'svn', 'cmake', 'python', 'perl', 'eclipse', 'qt', 'boost', 'MSVC2010Express', 'console2', 'nsis')]
         [string[]]$tools="",
         
         ## Select library installation package
@@ -113,20 +116,21 @@ Function Install-CustusXDevelopmentEnvironment {
         [string[]]$ssh_keys
     )
     
+    Add-Logging 'DEBUG' '$dummy: '$dummy
+    Add-Logging 'DEBUG' '$tool_package: '$tool_package
+    Add-Logging 'DEBUG' '$tool_actions: '$tool_actions
+    Add-Logging 'DEBUG' '$tools: '$tools
+    Add-Logging 'DEBUG' '$lib_package: '$lib_package
+    Add-Logging 'DEBUG' '$lib_actions: '$lib_actions
+    Add-Logging 'DEBUG' '$libs: '$libs
+    Add-Logging 'DEBUG' '$cmake_generator: '$cmake_generator
+    Add-Logging 'DEBUG' '$build_type: '$build_type
+    Add-Logging 'DEBUG' '$target_archs: '$target_archs
+    
     # Handle parameters
     ############################
     if($dummy){
-        Write-Host '$dummy: '$dummy -ForegroundColor Yellow
-        Write-Host '$tool_package: '$tool_package -ForegroundColor Yellow
-        Write-Host '$tool_actions: '$tool_actions -ForegroundColor Yellow
-        Write-Host '$tools: '$tools -ForegroundColor Yellow
-        Write-Host '$lib_package: '$lib_package -ForegroundColor Yellow
-        Write-Host '$lib_actions: '$lib_actions -ForegroundColor Yellow
-        Write-Host '$libs: '$libs -ForegroundColor Yellow
-        Write-Host '$cmake_generator: '$cmake_generator -ForegroundColor Yellow
-        Write-Host '$build_type: '$build_type -ForegroundColor Yellow
-        Write-Host '$target_archs: '$target_archs -ForegroundColor Yellow
-        Write-Host "Dummy exit." -ForegroundColor Green
+        Add-Logging 'INFO' "Dummy exiting Install-CustusXDevelopmentEnvironment."
         return
     }
     
@@ -143,7 +147,7 @@ Function Install-CustusXDevelopmentEnvironment {
             "clean_configure"{$configure=$true; $config_command="--configure_clean"}
             "configure"{$configure=$true}
             "build"{$build=$true}
-            default{Write-Host "Found library action that was not supporte." -ForegroundColor Red; return "Configuration error."}
+            default{Add-Logging 'ERROR' "Found library action that was not supporte."; return "Configuration error."}
         }
     }
     
@@ -151,7 +155,7 @@ Function Install-CustusXDevelopmentEnvironment {
     switch ($lib_package){
         "all" {$selected_libs = "--all"}
         "partial" {$selected_libs = $libs}
-        default { Write-Host "Could not figure out which libraries where selected." -ForegroundColor Red; return "Configuration error."}
+        default { Add-Logging 'ERROR' "Could not figure out which libraries where selected."; return "Configuration error."}
     }
     
     $build_qt = $false
@@ -162,14 +166,14 @@ Function Install-CustusXDevelopmentEnvironment {
     switch($cmake_generator){
         'Eclipse CDT4 - NMake Makefiles'{$generator_command=""}
         'NMake Makefiles JOM'{$generator_command=@("--jom", "-j", "$script:CX_CORES")}
-        default{Write-Host "Could not figure out which cmake generator to use." -ForegroundColor Red; return "Configuration error."}
+        default{Add-Logging 'ERROR' "Could not figure out which cmake generator to use."; return "Configuration error."}
     }
     
     $build_type_command=""
     switch($build_type){
         "Debug"{$build_type_command=@("--build_type", "Debug")}
         "Release"{$build_type_command=@("--build_type", "Release")}
-        default{Write-Host "Could not figure out which build type to use." -ForegroundColor Red; return "Configuration error."}
+        default{Add-Logging 'ERROR' "Could not figure out which build type to use."; return "Configuration error."}
     }
     
     $ssh_append=$true
@@ -178,60 +182,61 @@ Function Install-CustusXDevelopmentEnvironment {
     
     # Run
     ############################
-    ResizeWindowBuffer
-    Write-Host "Running the installer script." -ForegroundColor Magenta
+    Expand-WindowBuffer
+    Add-Logging 'EMPHASIS' "Running the installer script."
 
     # Get system info
     #####
     $os_arch = Get-OsArchitecture
-    Write-Host "* You are on a $os_arch operating system *" -ForegroundColor DarkYellow
+    Add-Logging 'INFO' "* You are on a $os_arch operating system *"
 
     $cores = Get-Cores
-    Write-Host "* You have $cores core(s) available *" -ForegroundColor DarkYellow
+    Add-Logging 'INFO' "* You have $cores core(s) available *"
 
     # Check requirements
     #####
     if($os_arch -ne "64-bit")
-        {Write-Host "This script only works for 64-bit Windows" -ForegroundColor Red; return "Abort."}
+        {Add-Logging 'ERROR' "This script only works for 64-bit Windows"; return "Abort."}
     
     $32bit_compiler = Find-Compiler "x86"
     $64bit_compiler = Find-Compiler "x64"
     if(!$32bit_compiler)
-        {Write-Host "* You do NOT have a 32 bit compiler available. *" -ForegroundColor DarkYellow}
+        {Add-Logging 'INFO' "* You do NOT have a 32 bit compiler available. *"}
     if(!$64bit_compiler)
-        {Write-Host "* You do NOT have a 64 bit compiler available. *" -ForegroundColor DarkYellow}
+        {Add-Logging 'INFO' "* You do NOT have a 64 bit compiler available. *"}
     
     $build32bit = ($32bit_compiler -and ($target_archs -contains "x86"))
     $build64bit = ($64bit_compiler -and ($target_archs -contains "x64"))
 
     # Setup SSH
     #####
-    Write-Host "`n***** SSH Configuration*****" -ForegroundColor Yellow
+    Add-Logging 'HEADER' "SSH Configuration"
     Install-SSHKey "./id_rsa.pub" "./id_rsa" "./known_hosts" -append $ssh_append
+    Add-Logging 'INFO' "Installed SSH-Keys" 
     
     # Get tools
     #####
 
-    Write-Host "`n***** TOOLS *****" -ForegroundColor Yellow
-    $success = main $tool_package $tool_actions -tools:$tools
+    Add-Logging 'HEADER' "TOOLS"
+    $success = Get-Tools $tool_package $tool_actions -tools $tools
     if(!($success -eq $true))
-        {Write-Host "Script failed when getting tools."; return}
+        {Add-Logging 'ERROR' "Script failed when getting tools.";return}
         
     # Build Qt
     #####
     if($build_qt -and $build64bit){
-        ### BUILDING 64 bit Qt ###
+        Add-Logging 'HEADER' "BUILDING 64 bit Qt"
         $qt_64buildbin_dir = $script:CX_QT_BUILD_X64+"\bin"
         $configure = "configure $script:CX_QT_CONFIG_OPTIONS"
         if(Test-QtConfigured $script:CX_QT_BUILD_X64)
-            {$configure = "echo Qt already configured, skipping."}
+            {$configure = "echo Qt already configured, skipping."; $script:CX_LOGGER.addINFO("echo Qt already configured, skipping.")}
         $batch_64bit = @"
 echo ***** Building Qt 64 bit using jom with $cores core(s) *****
 call "$script:CX_MSVC_VCVARSALL" x64
 cd $script:CX_QT_BUILD_X64
 set PATH=$qt_64buildbin_dir;%PATH%
 $configure
-jom /j $cores
+jom /j $cores /s
 "@
 
         $tempFile64 = [IO.Path]::GetTempFileName() | Rename-Item -NewName {$_ -replace 'tmp$', 'bat'} -PassThru
@@ -242,7 +247,7 @@ jom /j $cores
     }
 
     if($build_qt -and $build32bit){
-        ### BUILDING 32 bit Qt ###
+        Add-Logging 'HEADER' "BUILDING 32 bit Qt"
         $qt_32buildbin_dir = $script:CX_QT_BUILD_X86+"\bin"
         $configure = "configure $script:CX_QT_CONFIG_OPTIONS"
         if(Test-QtConfigured $script:CX_QT_BUILD_X86)
@@ -253,7 +258,7 @@ call "$script:CX_MSVC_VCVARSALL" x86
 cd $script:CX_QT_BUILD_X86
 set PATH=$qt_32buildbin_dir;%PATH%
 $configure
-jom /j $cores
+jom /j $cores /s
 "@
 
         $tempFile32 = [IO.Path]::GetTempFileName() | Rename-Item -NewName {$_ -replace 'tmp$', 'bat'} -PassThru
@@ -266,7 +271,7 @@ jom /j $cores
     if($checkout){
         # Checkout libs
         #####
-        Write-Host "`n***** LIBS CHECKOUT *****" -ForegroundColor Yellow
+        Add-Logging 'HEADER' "LIBS CHECKOUT"
         python .\cxInstaller.py $checkout_command $generator_command $build_type_command $script:CX_INSTALL_COMMON_OPTIONS $selected_libs
         # There is a bug in the script, where IGSTK tries to access information in the CustusX folder,
         # which doesn't exist at that time
@@ -278,11 +283,11 @@ jom /j $cores
     if($configure -or $build){
         # Configure and build libs
         #####
-        Write-Host "`n***** LIBS CONFIGURE AND/OR BUILD *****" -ForegroundColor Yellow
+        Add-Logging 'HEADER' "LIBS CONFIGURE AND/OR BUILD"
 
         # 64 bit #
         if($build64bit){
-            Write-Host "* 64 bit *" -ForegroundColor DarkYellow
+            Add-Logging 'INFO' "64 bit config and/or build"
           
             $configureAndBuild64 = @"
 call $script:CX_CXVARS_64
@@ -308,7 +313,7 @@ python .\cxInstaller.py $build_command $generator_command $build_type_command $s
 
         # 32 bit #
         if($build32bit){
-            Write-Host "* 32 bit *" -ForegroundColor DarkYellow
+            Add-Logging 'INFO' "32 bit config and/or build"
             
             $configureAndBuild32 = @"
 call $script:CX_CXVARS_86
@@ -316,13 +321,13 @@ call $script:CX_CXVARS_86
             if($configure){
                 $configureAndBuild32 += @"
 `n
-python .\cxInstaller.py $config_command $generator_command $build_type_command $script:CX_INSTALL_COMMON_OPTIONS $selected_libs
+python .\cxInstaller.py $config_command $generator_command $build_type_command $script:CX_INSTALL_COMMON_OPTIONS $selected_libs --b32
 "@
             }
             if($build){
                 $configureAndBuild32 += @"
 `n
-python .\cxInstaller.py $build_command $generator_command $build_type_command $script:CX_INSTALL_COMMON_OPTIONS $selected_libs
+python .\cxInstaller.py $build_command $generator_command $build_type_command $script:CX_INSTALL_COMMON_OPTIONS $selected_libs --b32
 "@
             }
             $tempFile32 = [IO.Path]::GetTempFileName() | Rename-Item -NewName {$_ -replace 'tmp$', 'bat'} -PassThru
@@ -332,6 +337,6 @@ python .\cxInstaller.py $build_command $generator_command $build_type_command $s
             Remove-Item $tempFile32
         }
     }
-
-    Write-Host "`nInstallation process took $(GetElapsedTime $script:startTime)" -ForegroundColor Green
+    $script:CX_LOGGER.print()
+    Add-Logging 'SUCCESS' "`nInstallation process took $(Get-ElapsedTime $script:startTime)"
 }

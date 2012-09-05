@@ -20,18 +20,23 @@ AUTHOR: Janne Beate Bakeng, SINTEF
 DATE: 21.08.2012
 
 #>
+$psScriptRoot = Split-Path -Path $MyInvocation.MyCommand.Definition
+Push-Location $psScriptRoot
 . .\Utilities.ps1
+Pop-Location
 
-# PRIVATE user information
+# PRIVATE user information 
+# (EDIT)
 ###################################################
 $script:CX_GIT_NAME = "Janne Beate Bakeng"
 $script:CX_GIT_EMAIL = "janne.beate.lervik.bakeng@sintef.no"
 
 $script:CX_MEDTEK_USERNAME = "jannebb"
 
-# System information
+# System information 
+# (normally no need to edit)
 ###################################################
-$script:CX_DEBUG_SCRIPT = $true #use if developing the windows installer script
+$script:CX_DEBUG_SCRIPT = $false #use if developing the windows installer script
 
 $script:CX_DEFAULT_DRIVE = "C:" #This should be the drive where windows and all your software is installed
 $script:CX_PROGRAM_FILES = $CX_DEFAULT_DRIVE+"\Program Files"
@@ -46,7 +51,7 @@ $script:CX_MSVC_VCVARSALL = $CX_MSVC+"\VC\vcvarsall.bat"
 
 $script:CX_ROOT = $CX_DEFAULT_DRIVE+"\Dev"
 $script:CX_WORKSPACE = $CX_ROOT+"\workspace"
-$script:CX_EXTERNAL_CODE = $CX_ROOT+"\external_code"
+$script:CX_EXTERNAL_CODE = $CX_ROOT+"\external"
 
 $script:CX_QT_VERSION = "4.8.1"
 $script:CX_QT_QMAKESPEC = "win32-msvc2010"
@@ -58,9 +63,13 @@ $script:CX_QT_QTDIR_X86 = $script:CX_QT_BUILD_X86
 $script:CX_QT_QTDIR_X64 = $script:CX_QT_BUILD_X64
 
 $script:CX_CORES = Get-Cores
-$script:CX_INSTALL_COMMON_OPTIONS = @("--silent_mode", "--static", "--user", "$script:CX_MEDTEK_USERNAME") #Do NOT specify components nor checkout, config or build here
+$script:CX_INSTALL_COMMON_OPTIONS = @("--silent_mode", "--static", "--user", "$script:CX_MEDTEK_USERNAME") #Do NOT specify components, checkout, config or build here
 
 $script:CX_TOOL_FOLDER = "$script:CX_ROOT\Downloaded_applications"
 $script:CX_ENVIRONMENT_FOLDER = "$script:CX_ROOT\CustusX_environment"
 $script:CX_CXVARS_86 = $CX_ENVIRONMENT_FOLDER+"\cxVars_x86.bat"
 $script:CX_CXVARS_64 = $CX_ENVIRONMENT_FOLDER+"\cxVars_x64.bat"
+
+if(!$script:CX_LOGGER){
+    $script:CX_LOGGER = New-Object Log($script:CX_ENVIRONMENT_FOLDER+"\Installation_log.txt")
+}

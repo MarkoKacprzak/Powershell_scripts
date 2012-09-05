@@ -18,8 +18,9 @@ Caveat:
 - UltrasonixServer does not build on Windows 32 bit.
 
 Install:
+0) Edit Config.ps1 (if needed)
 1) Start -> Search for cmd -> Right click -> Run as Administrator
-2) C:\Path_to_files\> Install.bat
+2) C:\User\dev\Desktop\Installer\> Install.bat
 3a) If ITK-Snap selected: Click "Repair Microsoft Visual C++ 2010 x64 Redistributable to its original state." -> Next -> Finish
     OR
 3b) If ITK-Snap selected: I have read and accepted the license terms -> Install -> Finish
@@ -60,4 +61,13 @@ Do this:
 Anti-virus finds potentially harmfull program, something about the compiler.
 (Solution3)
 Tell anti-virus to ignore.
+
+(Problem 4)
+When configuring ITK the following error occurs:
+"CMake Error at CMakeLists.txt:22 (message):
+  ITK build directory path length is too long (51 > 50).Please set the ITK
+  build directory to a directory with a shorter path."
+http://www.mail-archive.com/insight-developers@itk.org/msg00181.html
+(Solution4)
+Get CMake 2.8.9 or higher.
 
