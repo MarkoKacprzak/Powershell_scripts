@@ -13,39 +13,6 @@ $script:startTime = get-date
 
 <#
 .SYNOPSIS
-Removes personal ssh-keys that where installed by
-the installer script and changes CustusX3 git protocol
-to be https.
-
-.NOTES
-AUTHOR: Janne Beate Bakeng, SINTEF
-DATE: 31.08.2012
-#>
-$scriptpath = $MyInvocation.MyCommand.Path
-Function ConvertTo-DeveloperMachine{
-    #Remove private ssh-keys
-    $ssh_dir = "~/.ssh"
-    rmdir $ssh_dir -Recurse #-WhatIf
-
-    $dir = Split-Path $scriptpath
-    Remove-Item "$dir\id_rsa.pub" -Force #-WhatIf
-    Remove-Item "$dir\id_rsa" -Force #-WhatIf
-    Remove-Item "$dir\known_hosts" -Force #-WhatIf
-
-    #Change git protocol to https to enable promting every time one wants to push
-    $git_config = "$script:CX_WORKSPACE\CustusX3\CustusX3\.git\config"
-    (Get-Content $git_config) | 
-    ForEach-Object {$_ -replace "git@github.com:", "https://github.com/"} | Set-Content $git_config #-WhatIf
-    
-    #Change git config names
-    git config --global user.name "Developer"
-    git config --global user.email "developer@sintef.no"
-    
-    Add-Logging 'EMPHASIS' "Machine converted to developer machine."
-}
-
-<#
-.SYNOPSIS
 Installs tools, sets up developer environment
 and builds CustusX and required libraries.
 
@@ -77,7 +44,7 @@ Function Install-CustusXDevelopmentEnvironment {
         
         ## Select which tools to processed (will only work with tool_package=partial)
         [Parameter(Mandatory=$false)]
-        [ValidateSet('7-Zip', 'cppunit', 'jom', 'git', 'svn', 'cmake', 'python', 'perl', 'eclipse', 'qt', 'boost', 'MSVC2010Express', 'console2', 'nsis')]
+        [ValidateSet('7-Zip', 'cppunit', 'jom', 'git', 'svn', 'cmake', 'python', 'perl', 'eclipse', 'qt', 'boost', 'MSVC2010Express', 'console2', 'nsis', 'firefox', 'cuda')]
         [string[]]$tools="",
         
         ## Select library installation package
@@ -116,16 +83,16 @@ Function Install-CustusXDevelopmentEnvironment {
         [string[]]$ssh_keys
     )
     
-    Add-Logging 'DEBUG' '$dummy: '$dummy
-    Add-Logging 'DEBUG' '$tool_package: '$tool_package
-    Add-Logging 'DEBUG' '$tool_actions: '$tool_actions
-    Add-Logging 'DEBUG' '$tools: '$tools
-    Add-Logging 'DEBUG' '$lib_package: '$lib_package
-    Add-Logging 'DEBUG' '$lib_actions: '$lib_actions
-    Add-Logging 'DEBUG' '$libs: '$libs
-    Add-Logging 'DEBUG' '$cmake_generator: '$cmake_generator
-    Add-Logging 'DEBUG' '$build_type: '$build_type
-    Add-Logging 'DEBUG' '$target_archs: '$target_archs
+    Add-Logging 'DEBUG' ('$dummy: '+$dummy)
+    Add-Logging 'DEBUG' ('$tool_package: '+$tool_package)
+    Add-Logging 'DEBUG' ('$tool_actions: '+$tool_actions)
+    Add-Logging 'DEBUG' ('$tools: '+$tools)
+    Add-Logging 'DEBUG' ('$lib_package: '+$lib_package)
+    Add-Logging 'DEBUG' ('$lib_actions: '+$lib_actions)
+    Add-Logging 'DEBUG' ('$libs: '+$libs)
+    Add-Logging 'DEBUG' ('$cmake_generator: '+$cmake_generator)
+    Add-Logging 'DEBUG' ('$build_type: '+$build_type)
+    Add-Logging 'DEBUG' ('$target_archs: '+$target_archs)
     
     # Handle parameters
     ############################
@@ -227,16 +194,24 @@ Function Install-CustusXDevelopmentEnvironment {
     if($build_qt -and $build64bit){
         Add-Logging 'HEADER' "BUILDING 64 bit Qt"
         $qt_64buildbin_dir = $script:CX_QT_BUILD_X64+"\bin"
-        $configure = "configure $script:CX_QT_CONFIG_OPTIONS"
+        $build = @"
+jom /j $cores /s
+echo %errorlevel% > BuildStatus.txt
+"@
+        if(Test-QtBuilt $script:CX_QT_BUILD_X64)
+            {$build = "echo Qt already built, skipping."; $script:CX_LOGGER.addINFO("echo Qt already built, skipping.")}
+        $configure = ".\configure $script:CX_QT_CONFIG_OPTIONS"
         if(Test-QtConfigured $script:CX_QT_BUILD_X64)
             {$configure = "echo Qt already configured, skipping."; $script:CX_LOGGER.addINFO("echo Qt already configured, skipping.")}
         $batch_64bit = @"
+@echo off
 echo ***** Building Qt 64 bit using jom with $cores core(s) *****
+
+cd "$script:CX_QT_BUILD_X64"
 call "$script:CX_MSVC_VCVARSALL" x64
-cd $script:CX_QT_BUILD_X64
 set PATH=$qt_64buildbin_dir;%PATH%
 $configure
-jom /j $cores /s
+$build
 "@
 
         $tempFile64 = [IO.Path]::GetTempFileName() | Rename-Item -NewName {$_ -replace 'tmp$', 'bat'} -PassThru
@@ -249,16 +224,18 @@ jom /j $cores /s
     if($build_qt -and $build32bit){
         Add-Logging 'HEADER' "BUILDING 32 bit Qt"
         $qt_32buildbin_dir = $script:CX_QT_BUILD_X86+"\bin"
-        $configure = "configure $script:CX_QT_CONFIG_OPTIONS"
+        $configure = ".\configure $script:CX_QT_CONFIG_OPTIONS"
         if(Test-QtConfigured $script:CX_QT_BUILD_X86)
             {$configure = "echo Qt already configured, skipping."}
         $batch_32bit = @"
+@echo off
 echo ***** Building Qt 32 bit using jom with $cores core(s) *****
+
+cd "$script:CX_QT_BUILD_X86"
 call "$script:CX_MSVC_VCVARSALL" x86
-cd $script:CX_QT_BUILD_X86
 set PATH=$qt_32buildbin_dir;%PATH%
 $configure
-jom /j $cores /s
+$build
 "@
 
         $tempFile32 = [IO.Path]::GetTempFileName() | Rename-Item -NewName {$_ -replace 'tmp$', 'bat'} -PassThru

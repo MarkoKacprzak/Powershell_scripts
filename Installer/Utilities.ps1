@@ -1,4 +1,376 @@
-﻿# AUTHOR: Janne Beate Bakeng, SINTEF
+﻿$scriptpath = $MyInvocation.MyCommand.Path
+
+
+<#
+.SYNOPSIS
+Check if a network drive is mapped to the system or not.
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 24.09.2012
+
+.EXAMPLE
+Test-MappedNetworkDrive "\\medtek.sintef.no\MedTekDisk"
+#>
+Function Test-MappedNetworkDrive{
+    param(
+    ## The network drive to check if is mounted
+    $network_path
+    )
+    $found = $false
+    $connections = get-wmiobject win32_networkconnection
+    foreach($connection in $connections){
+        if($connection.RemoteName -eq $network_path){
+            $found = $true
+            break
+        }
+    }
+    return $found
+}
+
+<#
+.SYNOPSIS
+Get a free drive letter.
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 20.09.2012
+
+.EXAMPLE
+Get-FreeDriveLetter
+#>
+Function Get-FreeDriveLetter{
+    foreach ($letter in [char[]]([char]'Z'..[char]'A')) {
+        $drive = $letter + ‘:’
+        if (!(Test-Path -path $drive)){
+            break
+        }
+    }
+    $letter
+}
+
+<#
+.SYNOPSIS
+Map a network drive to a free drive letter.
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 20.09.2012
+
+.EXAMPLE
+Mount-NetworkDrive "\\medtek.sintef.no\MedTekDisk"
+Mounts the drive temporarly without a user.
+
+.EXAMPLE
+Mount-NetworkDrive "\\medtek.sintef.no\MedTekDisk" -username "user" -password "pass" -save True
+Mounts the drive permanently logged in as a user.
+#>
+Function Mount-NetworkDrive{
+    param(
+    ## The path to the disk that should be mounted
+    [parameter(Mandatory=$true, Position=0)]
+    $diskLocation,
+    ## The letter to assign to the remote drive
+    [parameter(Mandatory=$false)]
+    [char]$driveLetter,
+    ## Store the mapping persistently in the users profile, default = false
+    [parameter(Mandatory=$false)]
+    [bool]$save=$false,
+    ## If you want to log on using a specific user
+    [parameter(Mandatory=$false)]
+    [string]$username,
+    ## Users password
+    [parameter(Mandatory=$false)]
+    [string]$password
+    )
+    if(Test-MappedNetworkDrive $diskLocation)
+    {return "Not mapping $diskLocation, already mounted."}
+    
+    if(-not $driveLetter){
+        $driveLetter = Get-FreeDriveLetter
+    }
+        
+    $net = new-object -ComObject WScript.Network
+    if($username -and $password){
+        $net.MapNetworkDrive($driveLetter+":", $diskLocation, $save, $username, $password)
+    }else{
+        $net.MapNetworkDrive($driveLetter+":", $diskLocation, $save)
+    }
+}
+
+<#
+.SYNOPSIS
+Checks if a command exists in the current session.
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 01.04.2012
+
+.EXAMPLE
+Command-Exists git
+Checks if the command git exists in the current session.
+#>
+Function Command-Exists ($commandname) {
+    
+    if (Get-Command $commandname -errorAction SilentlyContinue)
+        {return $true}
+    else
+        {return $false}
+}
+
+<#
+.SYNOPSIS
+Adds a path to the environment for this session only
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 01.04.2012
+
+.EXAMPLE
+Add-ToPathSession "C:\PathToExe\Test.exe"
+Will make the Test.exe reachable in the current session.
+#>
+Function Add-ToPathSession{
+    param(
+    ## The path to add
+    $path
+    )
+    
+    $env:path = $env:path + ";" + $path
+    Add-Logging 'SUCCESS' ("Added "+$path+" to session!")
+}
+
+<#
+.SYNOPSIS
+Adds a path permanently to the system environment
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 01.04.2012
+
+.EXAMPLE
+Add-ToPathSession "C:\PathToExe\Test.exe"
+Will make the Test.exe reachable permanently.
+#>
+Function Add-ToPathPermanent{
+    param(
+    ## The path to add
+    $path
+    )
+    
+    [System.Environment]::SetEnvironmentVariable("PATH", $Env:Path + ";" + $path, "Machine")
+    Add-Logging 'SUCCESS' ("Added "+$tool.get_name()+" to path!")
+}
+
+<#
+.SYNOPSIS
+Un-/pins a file to the users taskbar
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 01.04.2012
+
+.EXAMPLE
+Toggle-PinTo-Taskbar "C:\PathToExe\Test.exe"
+Will toggle Test.exe to the taskbar.
+#>
+function Set-PinTo-Taskbar
+{
+  param([parameter(Mandatory = $true)]
+        [string]$application
+    )
+ 
+  $al = $application.Length
+  $appfolderpath = $application.SubString(0, $al - ($application.Split("\")[$application.Split("\").Count - 1].Length))
+ 
+  $objshell = New-Object -ComObject "Shell.Application"
+  $objfolder = $objshell.Namespace($appfolderpath)
+  $appname = $objfolder.ParseName($application.SubString($al - ($application.Split("\")[$application.Split("\").Count - 1].Length)))
+  $verbs = $appname.verbs()
+ 
+  foreach ($verb in $verbs)
+  {
+    if ($verb.name -match "(&K)")
+    {
+      $verb.DoIt()
+    }
+  }
+}
+
+<#
+.SYNOPSIS
+Removes personal ssh-keys that where installed by
+the installer script and changes CustusX3 git protocol
+to be https.
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 31.08.2012
+
+.EXAMPLE
+ConvertTo-DeveloperMachine
+#>
+Function ConvertTo-DeveloperMachine{
+    #Remove private ssh-keys
+    $ssh_dir = "~/.ssh"
+    if(Test-Path "$ssh_dir")
+        {rmdir $ssh_dir -Recurse}
+
+    $dir = Split-Path $scriptpath
+    if(Test-Path "$dir\id_rsa.pub")
+        {Remove-Item "$dir\id_rsa.pub" -Force}
+    if(Test-Path "$dir\id_rsa")
+        {Remove-Item "$dir\id_rsa" -Force}
+    if(Test-Path "$dir\known_hosts")
+        {Remove-Item "$dir\known_hosts" -Force}
+
+    #Change git protocol to https to enable promting every time one wants to push
+    $git_config = "$script:CX_WORKSPACE\CustusX3\CustusX3\.git\config"
+    (Get-Content $git_config) | 
+    ForEach-Object {$_ -replace "git@github.com:", "https://github.com/"} | 
+    Set-Content $git_config -Verbose
+    
+    #Change git config names
+    Add-ToPathSession "$script:CX_PROGRAM_FILES_X86\Git\cmd"
+    git config --global user.name "Developer"
+    git config --global user.email "developer@sintef.no"
+    
+    Add-Logging 'EMPHASIS' "Machine converted to developer machine."
+}
+
+<#
+.SYNOPSIS
+    Invokes a command and imports its environment variables.
+
+.DESCRIPTION
+    It invokes any cmd shell command (normally a configuration batch file) and
+    imports its environment variables to the calling process. Command output is
+    discarded completely. It fails if the command exit code is not 0. To ignore
+    the exit code use the 'call' command.
+    
+    http://stackoverflow.com/questions/4384814/how-to-call-batch-script-from-powershell/4385011#4385011
+
+.EXAMPLE
+    Invoke-Environment '"C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat" x86'
+
+.EXAMPLE
+    # Invokes Config.bat in the current directory or the system path
+    Invoke-Environment Config.bat
+
+.EXAMPLE
+    # Visual Studio environment: works even if exit code is not 0
+    Invoke-Environment 'call "%VS100COMNTOOLS%\vsvars32.bat"'
+
+.EXAMPLE
+    # This command fails if vsvars32.bat exit code is not 0
+    Invoke-Environment '"%VS100COMNTOOLS%\vsvars32.bat"'
+#>
+Function Invoke-Environment{
+    param
+    (
+        [Parameter(Mandatory=$true)] [string]
+        # Any cmd shell command, normally a configuration batch file.
+        $command
+    )
+    cmd /c "$command > nul 2>&1 && set" | .{process{
+        if ($_ -match '^([^=]+)=(.*)') {
+            [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+        }
+    }}
+
+    if ($LASTEXITCODE) {
+        throw "Command '$command': exit code: $LASTEXITCODE"
+    }
+}
+
+<#
+.SYNOPSIS
+    Resets the current sessions environment.
+    Affects the following environment variables:
+    -Path
+    -QtDir
+    -QMakeSpec
+
+.NOTES
+    AUTHOR: Janne Beate Bakeng, SINTEF
+    DATE: 07.09.2012
+
+.EXAMPLE
+    Clear-PSSessionEnvironment
+    Clears $env:Path, $env:QtDir and $env:QMakeSpec
+#>
+Function Clear-PSSessionEnvironment{
+    $value = [System.Environment]::GetEnvironmentVariable("PATH", "machine")
+    Set-Item -Path env:path -Value $value
+    Set-Item -Path env:qtdir -Value ""
+    Set-Item -Path env:qmakespec -Value ""
+
+    Add-Logging 'SUCCESS' "Cleared sessions environment (Path, QtDir and QMakeSpec, but NOT vcvarsall!)."
+}
+
+<#
+.SYNOPSIS
+    Sets up the environment to be ready to build 64bit.
+
+.NOTES
+    AUTHOR: Janne Beate Bakeng, SINTEF
+    DATE: 25.09.2012
+    
+.EXAMPLE
+    Set-64bitEnvironment
+#>
+Function Set-64bitEnvironment{
+    Clear-PSSessionEnvironment
+    Invoke-Environment $script:CX_CXVARS_64
+    $Host.UI.RawUI.WindowTitle = "Powershell CX:x64"
+    Add-Logging 'SUCCESS' "***** Setup CustusX 64 bit (x64) Development environment *****"
+}
+
+<#
+.SYNOPSIS
+    Sets up the environment to be ready to build 32bit.
+
+.NOTES
+    AUTHOR: Janne Beate Bakeng, SINTEF
+    DATE: 25.09.2012
+    
+.EXAMPLE
+    Set-32bitEnvironment
+#>
+Function Set-32bitEnvironment{
+    Clear-PSSessionEnvironment
+    Invoke-Environment $script:CX_CXVARS_86
+    $Host.UI.RawUI.WindowTitle = "Powershell CX:x86"
+    Add-Logging 'SUCCESS' "***** Setup CustusX 32 bit (x86) Development environment *****"
+}
+
+<#
+.SYNOPSIS
+Add Import-Module of a library to $PROFILE so that it will load 
+every time powershell is opened.
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 06.09.2012
+
+.EXAMPLE
+Add-ImportModuleToProfile "C:\Dev\Powershell\Installer"
+Powershell will now automatically import the Installer library every time it starts.
+#>
+Function Add-ImportModuleToProfile{
+    param(
+    ## Path to the folder where the *.psm1 file of your desired library can be found
+    [Parameter(Mandatory=$true, Position=0)]
+    [ValidateScript({Test-Path $_})]
+    [string]$modulepath
+    )
+    $command = "Import-Module $modulepath -Verbose -Force"
+    if(!(Select-String -Quiet -SimpleMatch $command -Path $PROFILE)){
+        Add-Content -Path $PROFILE -Value $command
+    }
+}
+
+# AUTHOR: Janne Beate Bakeng, SINTEF
 # DATE: 04.09.2012
 #
 # EXAMPLES OF USAGE
@@ -245,7 +617,11 @@ Function Add-Console2Tab{
         
         ## Wheter Console saves on user or on system.
         [Parameter(Mandatory=$false, Position=3)]
-        [bool]$SaveSettingsToUserDir = $false #This is default behavior of Console2
+        [bool]$SaveSettingsToUserDir = $false, #This is default behavior of Console2
+        
+        ## Path to the icon to be used
+        [Parameter(Mandatory=$false)]
+        [string]$Icon = ""
     )
 
     $console_xml = (Get-ChildItem -Path "\*\Console2\console.xml" -Recurse).fullname
@@ -261,10 +637,14 @@ Function Add-Console2Tab{
     for($i=0; $i -le ($tab.Count -1); $i++){
         if($tab[$i].title -eq "$TabTitle"){$exists = $true; "Tab already exists, not adding anything."}
     }
+    
+    $defaultIcon = "1"
+    if(Test-Path $icon)
+        {$defaultIcon = "0"}
 
     if(!$exists){
         $newTab = [xml] "
-        <tab title=`"$TabTitle`" use_default_icon=`"1`">
+        <tab title=`"$TabTitle`" icon=`"$icon`" use_default_icon=`"$defaultIcon`">
         	<console shell=`"$ConsoleShell`" init_dir=`"$InitalDir`" run_as_user=`"0`" user=`"`"/>
         	<cursor style=`"0`" r=`"255`" g=`"255`" b=`"255`"/>
         	<background type=`"0`" r=`"0`" g=`"0`" b=`"0`">
@@ -280,6 +660,33 @@ Function Add-Console2Tab{
         $doc.Save($console_xml)
         Write-Host "Added tab `"$TabTitle`" to Console2." -ForegroundColor Green
     }
+}
+
+<#
+.SYNOPSIS
+Test if Qt is built. Checks for a file called BuildStatus.txt inside
+the Qt buildfolder. This file is not made by Qt, but by a local script.
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 05.10.2012
+
+.EXAMPLE
+Test-QtBuilt "C:\Dev\external_code\Qt\Qt_4.8.1_build32_DebugAndRelease"
+Returns true if BuildStatus.txt is present and contains 0.
+#>
+Function Test-QtBuilt{
+    param(
+    ## The path to the Qt build folder
+    [string]$buildFolder
+    )
+    
+    $built = $false
+    $buidStatusTxt = "$buildFolder\BuildStatus.txt"
+    $line = Get-Content $buidStatusTxt -TotalCount 1
+    if($line -match "0")
+        {$built=$true}
+    return $built
 }
 
 <#
@@ -462,9 +869,9 @@ Export Application.exe's icon and saves it as Icon.ico
 Function Export-Icon{
     param(
     ## Path to the executable with icon to extract
-    $exeName,
+    [string]$exeName,
     ## Full path to file where icon should be saved
-    $saveAs
+    [string]$saveAs
     )
     $stream = [System.IO.File]::OpenWrite($saveAs)
     $icon = [Drawing.Icon]::ExtractAssociatedIcon((Get-Command $exeName).Path)

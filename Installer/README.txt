@@ -18,6 +18,7 @@ Caveat:
 - UltrasonixServer does not build on Windows 32 bit.
 
 Install:
+-1) Make sure Windows has installed ALL updates!
 0) Edit Config.ps1 (if needed)
 1) Start -> Search for cmd -> Right click -> Run as Administrator
 2) C:\User\dev\Desktop\Installer\> Install.bat

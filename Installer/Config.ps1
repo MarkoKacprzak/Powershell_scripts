@@ -33,6 +33,8 @@ $script:CX_GIT_EMAIL = "janne.beate.lervik.bakeng@sintef.no"
 
 $script:CX_MEDTEK_USERNAME = "jannebb"
 
+$script:CX_ISB_PASSWORD = "sintefsvn" # must not be saved?
+
 # System information 
 # (normally no need to edit)
 ###################################################
@@ -63,7 +65,7 @@ $script:CX_QT_QTDIR_X86 = $script:CX_QT_BUILD_X86
 $script:CX_QT_QTDIR_X64 = $script:CX_QT_BUILD_X64
 
 $script:CX_CORES = Get-Cores
-$script:CX_INSTALL_COMMON_OPTIONS = @("--silent_mode", "--static", "--user", "$script:CX_MEDTEK_USERNAME") #Do NOT specify components, checkout, config or build here
+$script:CX_INSTALL_COMMON_OPTIONS = @("--silent_mode", "--static", "--user", "$script:CX_MEDTEK_USERNAME", "--isb_password", "$script:CX_ISB_PASSWORD") #Do NOT specify components, checkout, config or build here
 
 $script:CX_TOOL_FOLDER = "$script:CX_ROOT\Downloaded_applications"
 $script:CX_ENVIRONMENT_FOLDER = "$script:CX_ROOT\CustusX_environment"
