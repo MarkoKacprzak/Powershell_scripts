@@ -224,6 +224,12 @@ $build
     if($build_qt -and $build32bit){
         Add-Logging 'HEADER' "BUILDING 32 bit Qt"
         $qt_32buildbin_dir = $script:CX_QT_BUILD_X86+"\bin"
+        $build = @"
+jom /j $cores /s
+echo %errorlevel% > BuildStatus.txt
+"@
+        if(Test-QtBuilt $script:CX_QT_BUILD_X86)
+            {$build = "echo Qt already built, skipping."; $script:CX_LOGGER.addINFO("echo Qt already built, skipping.")}
         $configure = ".\configure $script:CX_QT_CONFIG_OPTIONS"
         if(Test-QtConfigured $script:CX_QT_BUILD_X86)
             {$configure = "echo Qt already configured, skipping."}

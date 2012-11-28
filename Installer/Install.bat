@@ -16,7 +16,7 @@ powershell -command "& {Set-ExecutionPolicy Unrestricted}"
 powershell -noprofile -command "&{"^
  "Import-Module ..\Installer -Force;"^
  "<#Get-Tools 'full' 'all'#>;"^
- "Mount-NetworkDrive "\\medtek.sintef.no\MedTekDisk" -username "medtek" -password "password" -save $true;"^
+ "Mount-NetworkDrive "\\medtek.sintef.no\MedTekDisk" -username "medtek" -password "mi8kir" -save $true;"^
  "Install-CustusXDevelopmentEnvironment -dummy $false -tool_package 'developer' -tool_actions 'all' -tools @('jom') -lib_package 'all' -lib_actions @('all') -libs @('OpenCV') -cmake_generator 'NMake Makefiles JOM' -build_type 'Release' -target_archs @('x86', 'x64') -ssh_keys 'replace';"^
  "Read-Host 'Convert to developer machine? Ctrl+C if no'"^
  "ConvertTo-DeveloperMachine"^

@@ -75,12 +75,17 @@ class Common(object):
         self.mBuildFolder = "build" # default build folder. This is auto-changed when using xcode or 32 bit.
         self.m32bitCompileCMakeOption = "" # use "-DCMAKE_OSX_ARCHITECTURES=i386" for 32 bit. Done automatically by settings --b32 from command line.
         self.mBuildSSCExamples = "ON"
+        self.mBuildTesting = "ON"
         self.mUseCotire = "OFF"
         self.mSerialPort = "/Library/CustusX/igstk.links/cu.CustusX.dev0"
         self.mOpenCVStaticCRT = "OFF"
+        self.mOpenCVWithJasper = "OFF"
+        self.mOpenCVWithTiff = "OFF"
+        self.mOSX_DEPLOYMENT_TARGET = "10.6" # Deploy for OSX 10.6 Snow Leopard and later
         if (self.PLATFORM == 'Windows'):
             self.mCMakeGenerator = 'Eclipse CDT4 - NMake Makefiles' # need to surround with ' ' instead of " " on windows for it to work
             self.mBuildSSCExamples = "OFF"
+            self.mBuildTesting = "OFF"
             self.mExternalDir = self.mRootDir + "/external" #path length on windows is limited, need to keep it short
             self.mUseCotire = "ON"
             self.mSerialPort = "COM9"
@@ -334,12 +339,14 @@ cmake \
 -DBUILD_SHARED_LIBS:BOOL=%s \
 -DBUILD_TESTING=%s \
 -DBUILD_EXAMPLES=%s \
+-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING="%s" \
 ../%s''' % (DATA.mCMakeGenerator,
             DATA.m32bitCompileCMakeOption, 
             DATA.mBuildExternalsType, 
             DATA.mBuildShared, 
             DATA.mBuildExAndTest, 
             DATA.mBuildExAndTest, 
+            DATA.mOSX_DEPLOYMENT_TARGET,
             self.sourceFolder()))
 # ---------------------------------------------------------
 
@@ -392,12 +399,14 @@ cmake \
 -DVTK_USE_QVTK:BOOL=ON \
 -DVTK_USE_RPATH:BOOL=ON \
 -DDESIRED_QT_VERSION:STRING=4 \
+-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING="%s" \
 ../%s''' % (DATA.mCMakeGenerator,
             DATA.m32bitCompileCMakeOption, 
             DATA.mBuildExternalsType, 
             DATA.mBuildExAndTest,
             DATA.mBuildExAndTest,
             DATA.mBuildShared, 
+            DATA.mOSX_DEPLOYMENT_TARGET,
             self.sourceFolder()))
 # ---------------------------------------------------------
 
@@ -419,6 +428,7 @@ class OpenCV(CppComponent):
         runShell('git clone git://code.opencv.org/opencv.git OpenCV') #OpenCV moved to git, no longer available on svn
     def update(self):
         self._changeDirToSource()
+        runShell('git pull')
         runShell('git checkout 2.4.2')
     def configure(self):
         self._changeDirToBuild()
@@ -432,6 +442,11 @@ cmake \
 -DBUILD_SHARED_LIBS:BOOL=%s \
 -DWITH_CUDA:BOOL=OFF \
 -DBUILD_WITH_STATIC_CRT:BOOL=%s \
+-DBUILD_TIFF:BOOL=%s \
+-DWITH_TIFF:BOOL=%s \
+-DBUILD_JASPER:BOOL=%s \
+-DWITH_JASPER:BOOL=%s \
+-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING="%s" \
 ../%s''' % (DATA.mCMakeGenerator,
             DATA.m32bitCompileCMakeOption, 
             DATA.mBuildExternalsType, 
@@ -439,6 +454,11 @@ cmake \
             DATA.mBuildExAndTest,
             DATA.mBuildShared,
             DATA.mOpenCVStaticCRT,
+            DATA.mOpenCVWithTiff,
+            DATA.mOpenCVWithTiff,
+            DATA.mOpenCVWithJasper,
+            DATA.mOpenCVWithJasper,
+            DATA.mOSX_DEPLOYMENT_TARGET,
             self.sourceFolder() ))
 # ---------------------------------------------------------
 
@@ -455,6 +475,7 @@ class OpenIGTLink(CppComponent):
         #runShell('svn co http://svn.na-mic.org/NAMICSandBox/trunk/OpenIGTLink OpenIGTLink')
         runShell('git clone git://github.com/openigtlink/OpenIGTLink.git')
     def update(self):
+        self._changeDirToSource()
         runShell('git checkout master')
     def configure(self):
         self._changeDirToBuild()
@@ -466,12 +487,14 @@ cmake \
 -DBUILD_EXAMPLES:BOOL=%s \
 -DBUILD_TESTING:BOOL=%s \
 -DBUILD_SHARED_LIBS:BOOL=%s \
+-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING="%s" \
 ../%s' % (DATA.mCMakeGenerator,
             DATA.m32bitCompileCMakeOption, 
             DATA.mBuildExternalsType, 
             DATA.mBuildExAndTest,
             DATA.mBuildExAndTest,
             DATA.mBuildShared, 
+            DATA.mOSX_DEPLOYMENT_TARGET,
             self.sourceFolder() ))
 # ---------------------------------------------------------
 
@@ -513,6 +536,7 @@ cmake \
 -DITK_DIR:PATH="%s" \
 -DVTK_DIR:PATH="%s" \
 -DIGSTK_SERIAL_PORT_0="%s" \
+-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING="%s" \
 ../%s''' % (DATA.mCMakeGenerator,
             DATA.m32bitCompileCMakeOption, 
             DATA.mBuildExternalsType, 
@@ -520,6 +544,7 @@ cmake \
             ITK().buildPath(), 
             VTK().buildPath(), 
             DATA.mSerialPort,
+            DATA.mOSX_DEPLOYMENT_TARGET,
             self.sourceFolder())
             )
 # ---------------------------------------------------------
@@ -559,8 +584,10 @@ class DCMTK(CppComponent):
 \cmake \
 -G"%s" \
 -DBUILD_SHARED_LIBS:BOOL=%s \
+-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING="%s" \
 ../%s''' % (DATA.mCMakeGenerator,
             DATA.mBuildShared, 
+            DATA.mOSX_DEPLOYMENT_TARGET,
             self.sourceFolder()))
     def build(self):
         CppComponent.build(self)
@@ -597,11 +624,13 @@ cmake \
 -DVTK_DIR:PATH="%s" \
 -DDATASTREAMING_USE_HDF:BOOL=OFF \
 -DDATASTREAMING_USE_TRACKING:BOOL=OFF \
-../%s''' % (DATA.mCMakeGenerator, 
+-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING="%s" \
+../%s''' % (DATA.mCMakeGenerator,
             DATA.m32bitCompileCMakeOption, 
             DATA.mBuildType, 
             DATA.mBuildShared, 
             VTK().buildPath(), 
+            DATA.mOSX_DEPLOYMENT_TARGET,
             self.sourceFolder()+"/vtkDataStreamClient/")
             )
         # add xcode project here if needed
@@ -680,10 +709,12 @@ cmake \
 -DULTERIUS_INCLUDE_DIR:PATH="%s" \
 -DULTERIUS_LIBRARY:FILEPATH="%s" \
 -DSSC_BUILD_EXAMPLES="%s" \
+-DBUILD_TESTING="%s" \
 -DCOTIRE_ADD_UNITY_BUILDS="%s" \
 -DCOTIRE_ENABLE_PRECOMPILED_HEADERS="%s" \
 -DGEStreamer_DIR:PATH="%s" \
-../%s''' % (DATA.mCMakeGenerator, 
+-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING="%s" \
+../%s''' % (DATA.mCMakeGenerator,
             DATA.m32bitCompileCMakeOption, 
             DATA.mBuildType, DATA.mBuildShared, 
             ITK().buildPath(), 
@@ -694,9 +725,11 @@ cmake \
             UltrasonixSDK().includePath(),
             UltrasonixSDK().libFile(),
             DATA.mBuildSSCExamples,
+            DATA.mBuildTesting,
             DATA.mUseCotire,
             DATA.mUseCotire,
             ISB_DataStreaming().buildPath(),
+            DATA.mOSX_DEPLOYMENT_TARGET,
             self.sourceFolder() )
             )
         #TODO add xcode project here if needed?

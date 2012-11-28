@@ -120,6 +120,31 @@ Function Command-Exists ($commandname) {
 
 <#
 .SYNOPSIS
+Removes a path from the environment for this session only
+
+.NOTES
+AUTHOR: Janne Beate Bakeng, SINTEF
+DATE: 15.11.2012
+
+.EXAMPLE
+Add-ToPathSession "C:\Path"
+Will remove C:\Path\ from the current session.
+#>
+
+Function Remove-FromPathSession{
+    param(
+    ## The path to remove
+    $path
+    )
+    if($env:Path.Contains($path)){
+        $env:Path = $env:Path.Replace($path,'')
+        Add-Logging 'SUCCESS' ("Removed "+$path+" from session path!")
+    }else{
+        Add-Logging 'ERROR' ("Could not find and remove "+$path+" from session path.")
+    }
+}
+<#
+.SYNOPSIS
 Adds a path to the environment for this session only
 
 .NOTES
@@ -127,8 +152,8 @@ AUTHOR: Janne Beate Bakeng, SINTEF
 DATE: 01.04.2012
 
 .EXAMPLE
-Add-ToPathSession "C:\PathToExe\Test.exe"
-Will make the Test.exe reachable in the current session.
+Add-ToPathSession "C:\Path\"
+Will make the C:\Path\ content reachable in the current session.
 #>
 Function Add-ToPathSession{
     param(
@@ -639,7 +664,7 @@ Function Add-Console2Tab{
     }
     
     $defaultIcon = "1"
-    if(Test-Path $icon)
+    if(($icon) -and (Test-Path $icon))
         {$defaultIcon = "0"}
 
     if(!$exists){

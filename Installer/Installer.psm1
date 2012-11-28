@@ -32,7 +32,9 @@ Export-ModuleMember -Function @(
     "Clear-PSSessionEnvironment",
     "Set-64bitEnvironment",
     "Set-32bitEnvironment",
-    "Start-cxInstaller"
+    "Start-cxInstaller",
+    "Add-ToPathSession",
+    "Remove-FromPathSession"
     )
 Export-ModuleMember -Alias @(
     'Install-CDE'

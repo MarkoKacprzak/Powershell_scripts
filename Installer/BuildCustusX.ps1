@@ -6,40 +6,66 @@ Pop-Location
 
 <#
 .SYNOPSIS
-Convenience functionds for checking out, configuring and building CustusX.
+Convenience functions for checking out, configuring and building CustusX.
 
 WARNING: Depends on Config.ps1
 
 .NOTES
 AUTHOR: Janne Beate Bakeng, SINTEF
-DATE: 05.09.2012
+DATE: 09.10.2012
 
 .EXAMPLE
-CX3_64bit_Release_jom
+Create-Release "v3.2.9"
+Will create the CustusX v3.2.9 release
 #>
 Function Create-Release{
+    param(
+    ## The tag number where the release can be found in git.
+    [Parameter(Mandatory=$false, Position=0)]
+    [string]$tag="master"
+    )
+
     $respons = Read-Host "Have you completed the Release Procedure? (y/n)"
     if(!$respons -like "y"){
         return "Finish the Release Procedure before continuing!"
     }
-    #TODO
-    # find the 64bit jom (or eclipse) build
-    # find the 32bit jom (or eclipe) build
-    # enable 32 bit env, build 32bit CustusX, copy to ??? (to make sure it makes the installer)
-    #jom -j Get-Cores UltrasonixServer
-    # enable 64 bit env, build 64bit CustusX
-    #jom -j Get-Cores package
+    
+    CX3_64bit_static_Release_jom
+    CX3_32bit_static_Release_jom
+    
+    $cx_folder = "$script:CX_WORKSPACE\CustusX3"
+    $release64_folder = "$cx_folder\build_static_jom_Release"
+    $release32_folder = "$cx_folder\build_static32_jom_Release"
+    if((Test-Path $release64_folder) -and (Test-Path $release32_folder)){
+        # find the 32bit jom (or eclipe) build
+        Set-32bitEnvironment
+        cd $release32_folder
+        git chekout $tag
+        git submodule update
+        jom -j Get-Cores UltrasonixServer
+        
+        #copy UltrasonixServer.exe to ???
+        
+        # find the 64bit jom (or eclipse) build
+        Set-64bitEnvironment
+        cd $release64_folder
+        git chekout $tag
+        git submodule update
+        jom -j Get-Cores PACKAGE
+        
+    }
 }
 
 Function Get-BuildList{
-    $cx_folder = "$script:CX_WORKSPACE\"
+    $cx_folder = "$script:CX_WORKSPACE\CustusX3"
     #TODO
     #find all folder that should contain a build
+    Get-ChildItem $cx_folder
 }
 
 <#
 .SYNOPSIS
-Convenience functionds for checking out, configuring and building CustusX.
+Convenience functions for checking out, configuring and building CustusX.
 
 WARNING: Depends on Config.ps1
 
